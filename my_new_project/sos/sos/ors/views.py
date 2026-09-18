@@ -4,14 +4,8 @@ from django.shortcuts import render, redirect
 from .service.user_service import UserService
 
 
-# Create your views here.
-
 def test_ors(request):
     return HttpResponse('<h1>test ors app</h1>')
-
-
-def display(request):
-    return HttpResponse('<h1>this is ors display function</h1>')
 
 
 def welcome(request):
@@ -34,7 +28,6 @@ def user_signup(request):
     return render(request, 'registration.html')
 
 
-
 def user_signin(request):
     message = ''
     if request.method == "POST":
@@ -43,19 +36,21 @@ def user_signin(request):
         form['password'] = request.POST.get('password')
 
         service = UserService()
-        records = service.authenticate(form['login_id'], form['password'])
+        user_data = service.authenticate(form['login_id'], form['password'])
 
-        if len(records) > 0:
-            request.session['first_name'] = records[0].get('first_name')
-            return redirect('/ors/welcome')
+        if len(user_data) > 0:
+            request.session['first_name'] = user_data[0].get('first_name')
+            return redirect('/ors/welcome/')
         else:
             message = 'login & password invalid'
 
     return render(request, 'login.html', {'message': message})
 
-def logout(request):
+
+def user_logout(request):
     request.session['first_name'] = None
-    return redirect('/ors/signin')
+    return redirect('/ors/signin/')
+
 
 def test_list(request):
     list = [
@@ -67,6 +62,7 @@ def test_list(request):
     ]
     return render(request, "test_list.html", {"list": list})
 
+
 def user_list(request):
     form = {}
     form['page_no'] = 1
@@ -74,7 +70,7 @@ def user_list(request):
 
     if request.method == "POST":
         if request.POST['operation'] == "next":
-            form['page_no'] = int(request. POST.get('pageNo'))
+            form['page_no'] = int(request.POST.get('pageNo'))
             form['page_no'] += 1
 
         if request.POST['operation'] == "previous":
@@ -87,17 +83,20 @@ def user_list(request):
 
     service = UserService()
     list = service.search(form)
-    index = (form['page_no'] - 1) * 5
-    return render(request, "user_list.html", {"list": list, 'page_no': form['page_no'],'index':index})
+    index = (form['page_no'] - 1) * form['page_size']
+    return render(request, "user_list.html", {"list": list, 'page_no': form['page_no'], 'index': index})
 
-def delete_user(request,id=0):
+
+def delete_user(request, id=0):
     service = UserService()
     service.delete(id)
-    return redirect('/ors/list')
+    return redirect("/ors/list/")
+
 
 def user_save(request):
     if request.method == "POST":
         form = {}
+        form['id'] = request.POST.get('id', 0)
         form['first_name'] = request.POST.get('firstName')
         form['last_name'] = request.POST.get('lastName')
         form['login_id'] = request.POST.get('loginId')
@@ -106,6 +105,16 @@ def user_save(request):
         form['address'] = request.POST.get('address')
 
         service = UserService()
-        service.add(form)
+
+        if form['id'] != '' and int(form['id']) > 0:
+            service.update(form)
+        else:
+            service.add(form)
 
     return render(request, 'user.html')
+
+
+def edit_user(request, id=0):
+    service = UserService()
+    user_data = service.get(id)
+    return render(request, 'user.html', {'data': user_data[0]})
