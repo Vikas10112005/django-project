@@ -2,6 +2,43 @@ from django.http import HttpResponse
 from django.shortcuts import render, redirect
 
 from .service.user_service import UserService
+from .utility.data_validator import DataValidator
+
+
+def user_signup_validate(request):
+    input_error = {}
+    input_error['error'] = False
+    if (DataValidator.is_null(request.POST.get("firstName", ''))):
+        input_error['first_name'] = 'First Name is required'
+        input_error['error'] = True
+    if (DataValidator.is_null(request.POST.get("lastName", ''))):
+        input_error['last_name'] = 'Last Name is required'
+        input_error['error'] = True
+    if (DataValidator.is_null(request.POST.get("loginId", ''))):
+        input_error['login_id'] = 'Login ID is required'
+        input_error['error'] = True
+    if (DataValidator.is_null(request.POST.get("password", ''))):
+        input_error['password'] = 'Password is required'
+        input_error['error'] = True
+    if (DataValidator.is_null(request.POST.get("dob", ''))):
+        input_error['dob'] = 'DOB is required'
+        input_error['error'] = True
+    if (DataValidator.is_null(request.POST.get("address", ''))):
+        input_error['address'] = 'Address is required'
+        input_error['error'] = True
+    return input_error
+
+
+def user_signin_validate(request):
+    input_error = {}
+    input_error['error'] = False
+    if (DataValidator.is_null(request.POST.get("loginId", ''))):
+        input_error['login_id'] = 'Login ID is required'
+        input_error['error'] = True
+    if (DataValidator.is_null(request.POST.get("password", ''))):
+        input_error['password'] = 'Password is required'
+        input_error['error'] = True
+    return input_error
 
 
 def test_ors(request):
@@ -13,6 +50,11 @@ def welcome(request):
 
 
 def user_signup(request):
+    form = {}
+    form['message'] = ''
+    form['error'] = False
+    form['input_error'] = {}
+
     if request.method == "POST":
         form = {}
         form['first_name'] = request.POST.get('firstName')
@@ -22,29 +64,43 @@ def user_signup(request):
         form['dob'] = request.POST.get('dob')
         form['address'] = request.POST.get('address')
 
-        service = UserService()
-        service.add(form)
+        form['input_error'] = user_signup_validate(request)
 
-    return render(request, 'registration.html')
+        if not form['input_error']['error']:
+            service = UserService()
+            service.add(form)
+            form = {}
+            form['message'] = 'User Registration Successfully...!!!'
+            form['error'] = False
+
+    return render(request, 'registration.html', {'form': form})
 
 
 def user_signin(request):
-    message = ''
+    form = {}
+    form['message'] = ''
+    form['error'] = False
+    form['input_error'] = {}
+
     if request.method == "POST":
         form = {}
         form['login_id'] = request.POST.get('loginId')
         form['password'] = request.POST.get('password')
 
-        service = UserService()
-        user_data = service.authenticate(form['login_id'], form['password'])
+        form['input_error'] = user_signin_validate(request)
 
-        if len(user_data) > 0:
-            request.session['first_name'] = user_data[0].get('first_name')
-            return redirect('/ors/welcome/')
-        else:
-            message = 'login & password invalid'
+        if not form['input_error']['error']:
+            service = UserService()
+            user_data = service.authenticate(form['login_id'], form['password'])
 
-    return render(request, 'login.html', {'message': message})
+            if len(user_data) > 0:
+                request.session['first_name'] = user_data[0].get('first_name')
+                return redirect('/ors/welcome/')
+            else:
+                form['message'] = 'Login ID & Password Invalid'
+                form['error'] = True
+
+    return render(request, 'login.html', {'form': form})
 
 
 def user_logout(request):
@@ -118,3 +174,5 @@ def edit_user(request, id=0):
     service = UserService()
     user_data = service.get(id)
     return render(request, 'user.html', {'data': user_data[0]})
+
+
