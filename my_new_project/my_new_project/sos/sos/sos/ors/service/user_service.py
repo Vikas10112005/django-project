@@ -24,11 +24,6 @@ class UserService:
         dob = data['dob']
         address = data['address']
 
-        user_exist = self.find_by_login(login_id)
-
-        if len(user_exist) > 0:
-            raise Exception('Login ID already exist')
-
         cursor = connection.cursor()
         sql = "insert into sos_user values(%s, %s, %s, %s, %s, %s, %s)"
         data = (id, first_name, last_name, login_id, password, dob, address)
@@ -45,11 +40,6 @@ class UserService:
         password = data['password']
         dob = data['dob']
         address = data['address']
-
-        user_exist = self.find_by_login(login_id)
-
-        if len(user_exist) > 0 and user_exist[0].get('id') != id:
-            raise Exception('Login ID already exist')
 
         cursor = connection.cursor()
         sql = "update sos_user set first_name = %s, last_name = %s,login_id = %s, password = %s, dob = %s, address = %s where id = %s"
@@ -130,7 +120,7 @@ class UserService:
         column_name = ("id", "first_name", "last_name", "login_id", "password", "dob", "address")
         res = []
         for x in result:
-            # print({column_name[i]: x[i] for i, _ in enumerate(x)})
+            print({column_name[i]: x[i] for i, _ in enumerate(x)})
             res.append({column_name[i]: x[i] for i, _ in enumerate(x)})
         connection.close()
         return res
